@@ -59,10 +59,11 @@ def has_odd_cycles(permutation):
 
 def generate_scramble(random_object=None):
 	"""
-	Generate a valid rubik's cube scramble.
+	Generate a valid Rubik's cube scramble.
 	Faces have the order U (up), R (right), F (front), D (down), L (left), B (back).
 	Every field on a face is visited in reading order.
 
+	:param random_object: random.Random object to use
 	:return: string of UV map as described above
 	"""
 
@@ -99,6 +100,14 @@ def generate_scramble(random_object=None):
 
 
 def generate_scrambles(count, random_object=None):
+	"""
+	Generates multiple valid Rubik's cube scrambles.
+
+	:param count: how many scrambles to generate
+	:param random_object: random.Random object to use
+	:return: generator of uv's as str
+	"""
+
 	return (generate_scramble(random_object) for _ in range(count))
 
 

@@ -11,6 +11,14 @@ logger = logging.getLogger("Rubik's Cube Benchmark")
 
 
 def solve_scrambles(scrambles, url):
+	"""
+	Send multiple scrambles to solve to server.
+
+	:param scrambles: generator of scrambles to solve
+	:param url: server url
+	:return: list of dict, each containing the solution and the time it took to find the solution
+	"""
+
 	async def solve(scramble):
 		async with websockets.connect(url) as websocket:
 			await websocket.send(scramble)
