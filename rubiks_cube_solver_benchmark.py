@@ -22,12 +22,11 @@ def solve_scrambles(scrambles, url):
 
 	:param scrambles: generator of scrambles to solve
 	:param url: server url
-	:param callback: callback function after every solve
 	:return: list of dict, each containing the solution and the time it took to find the solution
 	"""
 
 	async def solve(scramble):
-		async with websockets.connect(url) as websocket:
+		async with websockets.connect(url, open_timeout=None, ping_timeout=None) as websocket:
 			await websocket.send(scramble)
 			data = await websocket.recv()
 
