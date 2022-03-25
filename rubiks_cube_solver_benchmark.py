@@ -1,3 +1,6 @@
+#!/usr/bin/env python3
+
+import argparse
 import asyncio
 import collections
 import json
@@ -5,12 +8,10 @@ import logging
 import random
 import time
 
-import matplotlib.ticker
-import numpy as np
 import websockets
-from matplotlib import pyplot as plt
 
 import rubiks_cube_scrambler
+import rubiks_cube_solver_benchmark_analyzer
 
 logger = logging.getLogger("Rubik's Cube Benchmark")
 
@@ -65,71 +66,28 @@ def benchmark_solver(scrambles, url, callback=None):
 	}
 
 
-def plot_data(data, output=None):
-	"""
-	Plot dict data with solve durations and solves move count as histograms
-
-	:param data: data from benchmark_solver
-	:param output: file to safe figure in
-	:return:
-	"""
-
-	times = [a['time'] for a in data['results']]
-	move_count = [len(a['solution'].split(' ')) for a in data['results']]
-
-	fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
-	plt.subplots_adjust(left=0.05, right=0.85)
-
-	ax1.set_title('Solves duration')
-	ax2.set_title('Solves move count')
-	plt.gcf().text(0.99, 0.8, f'solves: {len(times)}     \n avg. time: {np.mean(times):.3f}s', fontsize=14, horizontalalignment='right')
-
-	*_, patches = ax1.hist(
-		times,
-		bins=np.logspace(np.log(min(times)), np.log(max(times)), len(times) // 10, base=np.e),
-		alpha=0.8
-	)
-
-	for p in patches[::2]:
-		p.set_alpha(0.9)
-
-	ax1.set_xscale('log')
-
-	ax1.set_xlabel('time')
-	ax1.set_ylabel('count')
-
-	ax1.xaxis.set_minor_locator(matplotlib.ticker.FixedLocator([]))
-	ax1.yaxis.set_major_locator(matplotlib.ticker.MaxNLocator(integer=True))
-
-	ax2.hist(move_count, rwidth=0.8, bins=np.arange(min(move_count) - 0.5, max(move_count) + 1, 1), color='orange')
-	ax2.invert_xaxis()
-
-	ax2.xaxis.set_major_locator(matplotlib.ticker.MultipleLocator(1))
-	ax2.yaxis.set_minor_locator(matplotlib.ticker.MultipleLocator(5))
-	ax2.yaxis.set_major_locator(matplotlib.ticker.MultipleLocator(10))
-
-	ax2.set_xlabel('move count')
-	ax2.set_ylabel('count')
-
-	if output is not None:
-		plt.savefig(output)
-
-	plt.show()
-
-
 def main():
-	solve_count = 100
+	parser = argparse.ArgumentParser(description="Rubik's Cube Solver Webserver Benchmarker")
+	parser.add_argument('n', type=int, help='Number of scrambles to generate')
+	parser.add_argument('url', help='Websocket server url')
+	parser.add_argument('output', help='Output path of JSON data')
+	parser.add_argument('--seed', type=int, help='Scramble generator seed')
+	parser.add_argument('--output-plot', help='Output path of plot')
 
-	print()
+	args = parser.parse_args()
+
+	print('Solving scrambles...\n')
 	data = benchmark_solver(
-		rubiks_cube_scrambler.generate_scrambles(solve_count, random.Random(0)),
-		'ws://0.0.0.0:8080',
-		lambda i, v: print(f'\x1b[1A{(i + 1) / solve_count * 100:.2f}%')
+		rubiks_cube_scrambler.generate_scrambles(args.n, random.Random(args.seed)),
+		args.url,
+		lambda i, v: print(f'\x1b[1A{(i + 1) / args.n * 100:.2f}%')
 	)
-	plot_data(data, 'data.png')
 
-	with open('data.json', 'w') as f:
+	with open(args.output, 'w') as f:
 		json.dump(data, f)
+
+	if args.output_plot:
+		rubiks_cube_solver_benchmark_analyzer.plot_data(data, args.output_plot)
 
 
 if __name__ == '__main__':
